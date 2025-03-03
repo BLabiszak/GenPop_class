@@ -592,53 +592,59 @@ variation. In a neutrally evolving population, DNA sequence diversity
 follows equilibrium expectations of mutation and drift. However,
 selection can skew allele frequency spectra, reduce or elevate genetic
 diversity, and create correlations (linkage disequilibrium) between
-polymorphic sites beyond neutral expectations. In this lab, we analyze
-three candidate genes (Gen_1, Gen_2, Gen_3) from a large panmictic
-species, sampled from two subpopulations (North <em>N</em> and South
-<em>S</em>, 20 individuals each). Our goal is to determine which gene
-shows evidence of non-neutral evolution (natural selection). We
-will:</p>
-<ul>
-<li><strong>Process sequence data</strong>: Read FASTA files for each
-gene and prepare datasets for the total population and each
-subpopulation.</li>
-<li><strong>Compute summary statistics</strong>: Number of sequences
-(N), sequence length (L), segregating sites (S), singleton variants
-(Sg), nucleotide diversity (π), number of haplotypes (Nh), and haplotype
-diversity (Hd).</li>
-<li><strong>Perform neutrality tests</strong>: Calculate Tajima’s D for
-each gene and group to identify deviations from neutrality and Fay &amp;
-Wu’s H test.</li>
-<li><strong>Analyze linkage disequilibrium (LD)</strong>: Examine LD
-decay (r² vs. distance between SNPs) within each gene and population,
-including visualization with trend lines and optional heatmaps for
-pairwise LD.</li>
-<li><strong>Assess population differentiation</strong>: Compute FST
-between North and South for each gene to quantify genetic divergence
-between subpopulations.</li>
-<li><strong>Interpret results</strong>: Step-by-step, we explain the
-rationale behind each analysis and guide interpretation of patterns
-(e.g. which gene shows signs of positive, balancing, or local
-selection). Finally, we’ll use the combined evidence to identify the
-candidate gene under selection, discuss the type of selection, and
-suggest how to determine the gene’s function.</li>
-</ul>
+polymorphic sites beyond neutral expectations.</p>
+<p>In this lab, we analyze three candidate genes (Gen_1, Gen_2, Gen_3)
+from a large panmictic species, sampled from two subpopulations (North
+<em>N</em> and South <em>S</em>, 20 individuals each). Our goal is to
+determine which gene shows evidence of non-neutral evolution (natural
+selection).</p>
+<p>We will: - <strong>Process sequence data</strong>: Read FASTA files
+for each gene and prepare datasets for the total population and each
+subpopulation.<br />
+- <strong>Compute summary statistics</strong>: Number of sequences (N),
+sequence length (L), segregating sites (S), singleton variants (Sg),
+nucleotide diversity (π), number of haplotypes (Nh), and haplotype
+diversity (Hd).<br />
+- <strong>Perform neutrality tests</strong>: Calculate Tajima’s D and
+Fay &amp; Wu’s H test for deviations from neutrality.<br />
+- <strong>Analyze linkage disequilibrium (LD)</strong>: Examine LD decay
+(<em>r²</em> vs. distance between SNPs) within each gene and population,
+including visualization with trend lines and optional heatmaps.<br />
+- <strong>Assess population differentiation</strong>: Compute
+F<sub>ST</sub> between North and South for each gene to quantify genetic
+divergence.<br />
+- <strong>Interpret results</strong>: Determine the candidate gene under
+selection, discuss the type of selection, and suggest how to determine
+the gene’s function.</p>
 </div>
-<div id="data-preparation-and-processing" class="section level2">
-<h2>Data Preparation and Processing</h2>
+<div id="required-packages" class="section level2">
+<h2>Required Packages</h2>
+<p>First, we load the required R packages and read in the sequence data.
+We use the <strong>ape</strong>, <strong>adegenet</strong>,
+<strong>hierfstat</strong> and <strong>pegas</strong> libraries for
+handling DNA sequences and computing diversity statistics. Additionally
+we need: <strong>ggplot2</strong> and <strong>reshape2</strong> (for
+data visualization and reshaping), <strong>nls2</strong> (non-linear
+regression), and the <strong>tidyverse</strong> collection (for general
+data manipulation). Make sure all of these packages are installed.</p>
 <p>First, let’s load required R packages and read in the sequence data.
 We use the <strong>ape</strong> and <strong>pegas</strong> libraries for
 handling DNA sequences and computing diversity statistics:</p>
 <pre class="r"><code># Load necessary libraries
 library(ape)    # for reading FASTA and DNA data handling
-library(pegas)  # for population genetics analyses (segregating sites, diversity, etc)</code></pre>
+library(pegas)  # for population genetics analyses (segregating sites, diversity, etc)
+library(adegenet)
+library(hierfstat)
+library(ggplot2)
+library(tidyverse)</code></pre>
 <p>We have three FASTA files: <code>&quot;Gen_1.fasta&quot;</code>,
 <code>&quot;Gen_2.fasta&quot;</code>, <code>&quot;Gen_3.fasta&quot;</code>. We will start by
-reading only one - <strong>your job is to redo all the analyses with the
-rest</strong>. Each FASTA contains 40 sequences (20 from North, 20 from
-South). Sequence names start with <code>N</code> or <code>S</code>
-indicating origin. We’ll parse these to separate the total population
-vs. subpopulations:</p>
+reading in only one file (Gen_1). You should then repeat all analyses
+for the remaining two genes (Gen_2 and Gen_3). Each FASTA contains 40
+sequences (20 from North, 20 from South). Sequence names start with
+<code>N</code> or <code>S</code>, indicating their origin. We split the
+sequences into a combined dataset (total) and two subpopulation-specific
+datasets (North and South):</p>
 </div>
 <div id="basic-diversity-summary-statistics" class="section level2">
 <h2>Basic Diversity Summary Statistics</h2>
@@ -719,11 +725,11 @@ compute_diversity_stats &lt;- function(dna, gene_name, pop_name) {
 stats_df &lt;- do.call(rbind, lapply(names(dna_list), function(pop) {
   compute_diversity_stats(dna_list[[pop]], gene_name, pop)
 }))</code></pre>
-<p><span style="color:red"><strong>Exercise 1</strong>- Prepare the
-table for basic statistics in Gene_1, Gene_2 and Gene_3 - for total,
-only N and only S group. Use the code provided above or think of a
-function that will automate the process.</span></p>
-<p><strong>Table for Gen_1 - total should look like this:</strong></p>
+<p><span style="color:red"><strong>Exercise 1</strong> – Prepare the
+table for basic statistics in Gen_1, Gen_2, and Gen_3 – for total, N,
+and S groups. Use the code provided above or think of a function that
+will automate the process.</span></p>
+<p><strong>Table for Gen_1 – total should look like this:</strong></p>
 <table>
 <thead>
 <tr class="header">
@@ -782,9 +788,8 @@ instance, if a gene has a very low π or Hd in one subpopulation but not
 the other, it could indicate a recent selective sweep (removing
 diversity) in that subpopulation. Alternatively, a high number of
 segregating sites coupled with high Hd might indicate long-term
-balancing selection maintaining multiple haplotypes.</p>
-<p>Keep these patterns in mind as we proceed to formal neutrality tests
-and LD analysis.</p>
+balancing selection maintaining multiple haplotypes. Keep these patterns
+in mind as we proceed to formal neutrality tests and LD analysis.</p>
 </div>
 <div id="tajimas-d-neutrality-test" class="section level2">
 <h2>Tajima’s D Neutrality Test</h2>
@@ -813,8 +818,8 @@ D - Wikipedia</a>).</li>
 <p>We will use <code>pegas::tajima.test()</code> to compute Tajima’s D
 for each dataset. This function also provides a p-value to test if D
 deviates significantly from 0. We will perform the test on <strong>all
-mutations</strong> for each gene’s total population, North, and South
-samples:</p>
+mutations</strong> defined for each gene’s total population, North, and
+South</p>
 <pre class="r"><code># Compute Tajima&#39;s D for gene 1 and  every group
 
 # List of DNAbin objects and their corresponding population names
@@ -914,18 +919,7 @@ haplotypes with high internal LD.</p>
 gene for the total population and subpopulations. We’ll compute the
 squared correlation coefficient <em>r²</em> for each pair of SNPs as a
 measure of LD.</p>
-<p>We’ll automate this with R. Note that for some genes (especially if
-very few SNPs), there may be too few comparisons to plot; we’ll handle
-that accordingly:</p>
 <pre class="r"><code># LD 
-
-# Load necessary libraries
-library(ggplot2)
-library(reshape2)
-library(nls2)
-library(adegenet)
-library(tidyverse)
-# For non-linear regression
 
 # Conversion steps to calculate the LD 
 
@@ -979,12 +973,12 @@ ld_long</code></pre>
 ## 13  157   12 0.002079002      145         0.009697055
 ## 14  164   12 0.002079002      152         0.009262327
 ## 15  178   12 0.316239316      166         0.008500236</code></pre>
-<p>Now <code>ld_long</code> contains pairwise LD information (distance
-and r²) for one gene and group as well as variable named
-<strong>hill_weir_predicted</strong>. Let’s generate LD decay plots
-using this variable. We will plot <em>r²</em> vs. distance for each gene
-and population, and fit a Hill and Weir formula to visualize how quickly
-LD decay given distance between linked sites.</p>
+<p><code>ld_long</code> now contains pairwise LD information (distance
+and <em>r²</em>) for one gene and population, including a column
+<strong>hill_weir_predicted</strong> from the model fit. We will plot
+<em>r²</em> vs. distance for each gene and population, and fit the Hill
+and Weir theoretical decay curve to visualize how quickly LD decays with
+increasing distance between linked sites.</p>
 <pre class="r"><code># Decay plot
 
 ggplot(ld_long, aes(x = distance, y = value)) +
@@ -1000,7 +994,7 @@ population total.</p>
 <p><strong>Optional Heatmap Visualization:</strong> Another way to
 visualize LD is a heatmap of <em>r²</em> values between all pairs of
 polymorphic sites. We can create an LD heatmap for, say, the gene that
-showed interesting LD (Gen_3). Cells in the heatmap represent
+showed interesting LD (Gen_1). Cells in the heatmap represent
 <em>r²</em> between a pair of sites (with one axis being site position).
 High LD shows up as blocks of strong color along the diagonal.</p>
 <p>For example, using the LDmap function from <code>pegas</code>
